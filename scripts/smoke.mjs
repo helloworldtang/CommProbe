@@ -74,10 +74,7 @@ assert(outFrames.length === 1 && outFrames[0].hex === "AA BB CC DD", "下行发�
 const deviceGot = [];
 device.on("data", (c) => deviceGot.push(...c));
 await sleep(200);
-assert(
-  deviceGot.join() === [0xaa, 0xbb, 0xcc, 0xdd].join(),
-  "模拟下位机收到下行广播字节",
-);
+assert(deviceGot.join() === [0xaa, 0xbb, 0xcc, 0xdd].join(), "模拟下位机收到下行广播字节");
 
 ws.close();
 device.destroy();
