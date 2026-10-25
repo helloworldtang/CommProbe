@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 76">
   <!-- CommProbe logo：浅蓝底白卡片 + 图标 + 字标（自含背景，深浅色环境下均可读） -->
-  <rect width="340" height="76" rx="16" fill="#E3EBF8" />
-  <rect x="8" y="8" width="324" height="60" rx="11" fill="#FFFFFF" />
+  <rect width="244" height="76" rx="16" fill="#E3EBF8" />
+  <rect x="8" y="8" width="228" height="60" rx="11" fill="#FFFFFF" />
   <!-- 图标（与 icon.svg 同源） -->
   <circle cx="40" cy="38" r="21" fill="#4A4F54" />
   <path
