@@ -124,11 +124,7 @@ function clear(): void {
 <template>
   <section class="log">
     <div class="toolbar">
-      <input
-        v-model="filterText"
-        class="filter"
-        placeholder="过滤：hex 片段或文本，如 08 00 或 心跳"
-      />
+      <input v-model="filterText" class="filter" placeholder="过滤：hex 片段或文本" />
       <select v-model="dirFilter">
         <option value="all">全部方向</option>
         <option value="in">仅接收</option>

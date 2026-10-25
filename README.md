@@ -76,7 +76,7 @@ Windows 首次运行的防火墙弹窗请选择允许；macOS 首次若提示"�
 
 ```bash
 # 锁定具体 tag，不要引用滚动的 main 分支（main 会随演进引入未经审阅的变更）
-git clone --branch v0.1.1 --depth 1 https://github.com/helloworldtang/CommProbe.git
+git clone --branch v0.1.2 --depth 1 https://github.com/helloworldtang/CommProbe.git
 cd CommProbe && npm install && npm run build && npm start
 ```
 
