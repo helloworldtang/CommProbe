@@ -1,7 +1,12 @@
-# <img src="web/public/icon.svg" width="26" alt="" /> CommProbe
+<div align="center">
 
-面向研发人员的跨平台联调工具：TCP / UDP / 串口，Web 界面，一条命令启动，浏览器即用。
-功能与场景对标 SSCOM 网络调试助手，可在 macOS / Windows / Linux 上运行同一套代码。
+<img src="https://raw.githubusercontent.com/helloworldtang/CommProbe/main/web/public/logo.svg" width="340" alt="CommProbe" />
+
+跨平台 TCP / UDP / 串口联调工具 · Web 界面 · 一条命令启动，浏览器即用
+
+对标 SSCOM 网络调试助手，macOS / Windows / Linux 同一套代码
+
+</div>
 
 ## 功能（v0.1）
 

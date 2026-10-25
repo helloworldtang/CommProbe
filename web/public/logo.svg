@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76">
+  <!-- CommProbe logo：浅蓝底白卡片 + 图标 + 字标（自含背景，深浅色环境下均可读） -->
+  <rect width="340" height="76" rx="16" fill="#E3EBF8" />
+  <rect x="8" y="8" width="324" height="60" rx="11" fill="#FFFFFF" />
+  <!-- 图标（与 icon.svg 同源） -->
+  <circle cx="40" cy="38" r="21" fill="#4A4F54" />
+  <path
+    d="M25 42 C 30 42, 30 31, 36 31 S 43 45, 49 45"
+    stroke="#C8CDD0"
+    stroke-width="3.5"
+    fill="none"
+    stroke-linecap="round"
+  />
+  <circle cx="49" cy="45" r="3" fill="#4DA3FF" />
+  <!-- 字标 -->
+  <text
+    x="72"
+    y="47"
+    font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+    font-size="26"
+    font-weight="700"
+    fill="#2A2E35"
+  >Comm<tspan fill="#4DA3FF">Probe</tspan></text>
+</svg>
