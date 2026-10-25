@@ -1,6 +1,6 @@
 {
   "name": "commprobe-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "commprobe kernel: transports + framing + checksum + session recording, served over HTTP/WebSocket",

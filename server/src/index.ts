@@ -33,6 +33,18 @@ function parseArgs(argv: string[]): CliOptions {
   return opts;
 }
 
+function printHelp(): void {
+  console.log(`CommProbe v${PROTOCOL_VERSION} — 跨平台 TCP/UDP/串口联调工具
+
+用法: commprobe [选项]
+  --port <n>     监听端口（默认 ${DEFAULT_PORT}）
+  --no-open      启动后不自动打开浏览器
+  --no-record    关闭会话录制（默认开启，文件在 ~/.commprobe/sessions/）
+  --version, -V  输出版本号后退出
+  --help, -h     显示本帮助后退出
+`);
+}
+
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -77,7 +89,16 @@ function openBrowser(url: string): void {
 }
 
 async function main(): Promise<void> {
-  const opts = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  if (argv.includes("--version") || argv.includes("-V")) {
+    console.log(PROTOCOL_VERSION);
+    return;
+  }
+  if (argv.includes("--help") || argv.includes("-h")) {
+    printHelp();
+    return;
+  }
+  const opts = parseArgs(argv);
   const webDist = resolve(fileURLToPath(new URL("../../web/dist", import.meta.url)));
   const hasWeb = existsSync(webDist);
 

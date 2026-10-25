@@ -60,7 +60,7 @@ npm i -g commprobe
 commprobe    # 注意命令是 commprobe；浏览器自动打开 http://localhost:7717
 ```
 
-> 下次使用：再运行一次 `commprobe` 即可，无需重装。
+> 下次使用：再运行一次 `commprobe` 即可，无需重装。`commprobe --version` 查看当前版本（界面上方徽章也显示）。
 
 ### 路线 B：便携版（双击即用，类似 MySQL 的 zip 版）
 
@@ -81,7 +81,7 @@ Windows 首次运行的防火墙弹窗请选择允许；macOS 首次若提示"�
 
 ```bash
 # 锁定具体 tag，不要引用滚动的 main 分支（main 会随演进引入未经审阅的变更）
-git clone --branch v0.1.2 --depth 1 https://github.com/helloworldtang/CommProbe.git
+git clone --branch v0.1.3 --depth 1 https://github.com/helloworldtang/CommProbe.git
 cd CommProbe && npm install && npm run build && npm start
 ```
 
