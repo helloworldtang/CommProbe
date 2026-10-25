@@ -86,6 +86,8 @@ npm view serialport version            # 能输出版本号 = 源可用
 ```
 
 - 内网环境使用私有 Nexus 时，将 registry 指向包含 npmjs 代理的 group，配置写入项目根目录 `.npmrc`（模板见 `.npmrc.example`）。
+- `npm i -g commprobe` 时若提示 `@serialport/bindings-cpp` 的 install script 未放行：**可安全忽略**——串口的预编译二进制内置于包内、运行时自选加载，不依赖该脚本。介意提示可执行一次
+  `npm config set allow-scripts=@serialport/bindings-cpp --location=user`。
 
 ## 项目结构
 
