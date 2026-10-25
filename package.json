@@ -1,8 +1,13 @@
 {
   "name": "commprobe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CommProbe — cross-platform TCP/UDP/Serial debugging tool for developers, SSCOM-style, web UI",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/helloworldtang/CommProbe.git"
+  },
   "bin": {
     "commprobe": "server/dist/index.js"
   },

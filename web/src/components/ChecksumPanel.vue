@@ -22,6 +22,14 @@ const result = computed(() => {
   }
 });
 
+/** Modbus 线上序：CRC 低字节在前。数值序 0BC4 对应线上 C4 0B */
+const wireOrder = computed(() => {
+  if (algo.value !== "crc16-modbus") return "";
+  const v = result.value;
+  if (v.length !== 4) return "";
+  return `${v.slice(2)} ${v.slice(0, 2)}`;
+});
+
 async function copy(): Promise<void> {
   if (result.value && !result.value.startsWith("⚠")) {
     await navigator.clipboard.writeText(result.value);
@@ -56,6 +64,7 @@ async function copy(): Promise<void> {
       <code class="result">{{ result || "—" }}</code>
       <button @click="copy">复制</button>
     </div>
+    <p v-if="wireOrder" class="dim">Modbus 线上序（低字节在前）：{{ wireOrder }}</p>
     <p class="dim">{{ CHECKSUM_ALGORITHMS[algo].detail }}</p>
   </section>
 </template>
