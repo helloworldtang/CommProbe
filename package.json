@@ -1,0 +1,56 @@
+{
+  "name": "commprobe",
+  "version": "0.1.0",
+  "description": "CommProbe — cross-platform TCP/UDP/Serial debugging tool for developers, SSCOM-style, web UI",
+  "type": "module",
+  "bin": {
+    "commprobe": "server/dist/index.js"
+  },
+  "files": [
+    "server/dist",
+    "web/dist",
+    "launch"
+  ],
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n srv,web -c blue,green \"npm:dev -w server\" \"npm:dev -w web\"",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "test": "npm run test -w server",
+    "pack": "node scripts/pack.mjs",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.0.1",
+    "@eslint/js": "^9.20.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.0",
+    "typescript-eslint": "^8.24.0"
+  },
+  "allowScripts": {
+    "@serialport/bindings-cpp@12.0.1": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
+  }
+}

@@ -1,0 +1,70 @@
+name: release
+
+# 推送 v*.*.* tag 触发：质量门 → npm 发布 → 便携双包 → GitHub Release
+# npm 发布优先走 OIDC trusted publishing（免 token）；
+# 若已配置 NPM_TOKEN secret 则自动改用之；版本已发布时自动跳过。
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Quality gates
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        # npm 发布失败（如 trusted publishing 未配置）不阻塞 Release 生成
+        continue-on-error: true
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install -g npm@latest >/dev/null 2>&1 || true
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$(npm view commprobe@${VERSION} version 2>/dev/null)" = "$VERSION" ]; then
+            echo "commprobe@${VERSION} 已存在，跳过发布"
+          else
+            if [ -n "$NPM_TOKEN" ]; then
+              echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$HOME/.npmrc"
+            fi
+            npm publish --provenance
+          fi
+
+      - name: Pack portable bundles (win-x64 + mac-arm64)
+        run: |
+          node scripts/pack.mjs --target win-x64
+          node scripts/pack.mjs --target mac-arm64
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME 已存在，补传附件"
+            gh release upload "$GITHUB_REF_NAME" dist-portable/commprobe-v*.zip --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              dist-portable/commprobe-v*.zip \
+              --title "${GITHUB_REF_NAME} — TCP/UDP/串口联调工具（便携双击包）" \
+              --generate-notes
+          fi

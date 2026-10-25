@@ -1,0 +1,27 @@
+{
+  "name": "commprobe-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "commprobe kernel: transports + framing + checksum + session recording, served over HTTP/WebSocket",
+  "scripts": {
+    "dev": "tsx watch src/index.ts --dev",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/shared/checksum.test.ts src/shared/hex.test.ts src/framing/idle-grouper.test.ts src/shared/frame-fold.test.ts"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

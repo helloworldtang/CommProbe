@@ -1,0 +1,60 @@
+:root {
+  color-scheme: dark;
+  --bg: #101418;
+  --panel: #171d24;
+  --panel-2: #1d2530;
+  --border: #2a3440;
+  --text: #d7dee7;
+  --text-dim: #8792a1;
+  --accent: #4da3ff;
+  --in: #3fd08f;
+  --out: #ffb454;
+  --error: #ff6b6b;
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+input:focus,
+select:focus,
+button:focus {
+  outline: 1px solid var(--accent);
+}
+
+button {
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--accent);
+}
+
+label {
+  color: var(--text-dim);
+}

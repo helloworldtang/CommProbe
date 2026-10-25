@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-portable/
+coverage/
+*.log
+.DS_Store
+.env
+.npmrc
+.claude/
