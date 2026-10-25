@@ -1,4 +1,4 @@
-# CommProbe
+# <img src="web/public/icon.svg" width="26" alt="" /> CommProbe
 
 面向研发人员的跨平台联调工具：TCP / UDP / 串口，Web 界面，一条命令启动，浏览器即用。
 功能与场景对标 SSCOM 网络调试助手，可在 macOS / Windows / Linux 上运行同一套代码。
@@ -55,6 +55,8 @@ npm i -g commprobe
 commprobe    # 注意命令是 commprobe；浏览器自动打开 http://localhost:7717
 ```
 
+> 下次使用：再运行一次 `commprobe` 即可，无需重装。
+
 ### 路线 B：便携版（双击即用，类似 MySQL 的 zip 版）
 
 免装 Node、免装任何依赖，解压即用：
@@ -65,6 +67,8 @@ commprobe    # 注意命令是 commprobe；浏览器自动打开 http://localhos
 2. 解压到任意目录
 3. 双击 `start-windows.bat`（Windows）或 `start-mac.command`（macOS）
 4. 浏览器自动打开界面；关闭启动窗口即退出
+
+> 下次使用：再双击一次启动器即可，解压目录不要删。
 
 Windows 首次运行的防火墙弹窗请选择允许；macOS 首次若提示"无法验证的开发者"：右键文件 → 打开（仅需一次）。更多细节见包内《使用说明.txt》。
 

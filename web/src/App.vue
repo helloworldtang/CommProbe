@@ -26,6 +26,7 @@ watch(
 <template>
   <div class="app">
     <header class="topbar">
+      <img class="logo" src="/icon.svg" alt="CommProbe" />
       <span class="brand">CommProbe</span>
       <span class="badge" :class="{ ok: state.wsReady }">{{ wsBadge }}</span>
       <span v-if="state.lastError" class="error-banner">{{ state.lastError }}</span>
@@ -56,6 +57,11 @@ watch(
   padding: 8px 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+}
+.logo {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 .brand {
   font-weight: 700;
