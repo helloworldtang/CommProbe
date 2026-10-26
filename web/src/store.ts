@@ -34,6 +34,8 @@ export const state = reactive({
   connections: new Map<string, ConnectionInfo>(),
   serialPorts: [] as PortInfo[],
   lastError: "",
+  /** 「去打开连接」引导信号：时间戳变化时左侧连接面板闪一下 */
+  pulseConnections: 0,
 });
 
 let ws: WebSocket | null = null;

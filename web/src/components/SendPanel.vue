@@ -119,6 +119,15 @@ const openConnections = computed(() =>
   [...state.connections.values()].filter((c) => c.state === "open"),
 );
 
+/* 目标联动：左侧一打开连接就自动选中——用户不必跨半个屏幕去下拉里找一遍 */
+watch(openConnections, (list) => {
+  if (list.length === 0) {
+    quickTarget.value = "";
+    return;
+  }
+  if (!list.some((c) => c.id === quickTarget.value)) quickTarget.value = list[0].id;
+});
+
 const loops = new Map<string, ReturnType<typeof setInterval>>();
 
 interface Payload {
@@ -284,9 +293,19 @@ onUnmounted(() => {
     <div class="quick">
       <div class="quick-controls">
         <select v-model="quickTarget" class="target">
-          <option value="" disabled>目标连接…</option>
+          <option value="" disabled>
+            {{ openConnections.length ? "目标连接…" : "先在左侧「连接」打开一条" }}
+          </option>
           <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
         </select>
+        <button
+          v-if="!openConnections.length"
+          class="link"
+          title="不知道在哪配连接？点一下，左侧配置区会闪起来"
+          @click="state.pulseConnections = Date.now()"
+        >
+          去哪配？
+        </button>
         <select v-model="quickMode" class="mode">
           <option value="hex">HEX</option>
           <option value="text">文本</option>
@@ -296,7 +315,7 @@ onUnmounted(() => {
           <option value="gbk">GBK</option>
         </select>
         <span class="spacer" />
-        <button class="primary" @click="quickSend">发送</button>
+        <button class="primary send-btn" @click="quickSend">发送</button>
         <label class="loop-label" title="循环间隔（毫秒）">
           <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
         </label>
@@ -408,6 +427,13 @@ onUnmounted(() => {
 }
 .quick .mode {
   flex-shrink: 0;
+}
+/* 主操作按钮：高频路径，明显大于同排控件才好点 */
+.quick-controls .send-btn {
+  padding: 8px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 6px;
 }
 .quick-editor {
   width: 100%;

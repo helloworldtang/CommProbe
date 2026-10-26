@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
 import type {
@@ -107,10 +107,23 @@ function close(id: string): void {
 function refreshSerialPorts(): void {
   sendMsg({ t: "serial-list" });
 }
+
+/* 「去打开连接」引导：发送区点一下，这里闪两下告诉用户配置在哪 */
+const pulsing = ref(false);
+let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+watch(
+  () => state.pulseConnections,
+  () => {
+    pulsing.value = false;
+    requestAnimationFrame(() => (pulsing.value = true));
+    clearTimeout(pulseTimer);
+    pulseTimer = setTimeout(() => (pulsing.value = false), 1700);
+  },
+);
 </script>
 
 <template>
-  <section>
+  <section :class="{ pulse: pulsing }">
     <h2>连接</h2>
     <div class="row">
       <select v-model="form.kind">
@@ -202,6 +215,19 @@ function refreshSerialPorts(): void {
 </template>
 
 <style scoped>
+.pulse {
+  animation: conn-pulse 0.8s ease-in-out 2;
+  border-radius: 6px;
+}
+@keyframes conn-pulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+}
 h2 {
   margin: 0 0 8px;
   font-size: 13px;
