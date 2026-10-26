@@ -1,6 +1,6 @@
 {
   "name": "commprobe",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "CommProbe — cross-platform TCP/UDP/Serial debugging tool for developers, SSCOM-style, web UI",
   "type": "module",
   "license": "MIT",
