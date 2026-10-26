@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
 import type { TextEncoding } from "../../../server/src/shared/protocol";
+import { analyzeHex, fixCrcTail, sanitizeHexInput, type HexAnalysis } from "../hex-status";
 
 interface SendItem {
   id: string;
@@ -49,6 +50,64 @@ const quickContent = ref("");
 const quickLoopMs = ref(1000);
 const quickLooping = ref(false);
 
+/* ---- HEX 实时反馈：输入即解析，错误在发送前就看见 ---- */
+
+/** 字节芯片最多展示的个数，超出的折叠成计数——长帧不刷屏 */
+const CHIP_LIMIT = 32;
+
+const quickAnalysis = computed<HexAnalysis | null>(() =>
+  quickMode.value === "hex" ? analyzeHex(quickContent.value) : null,
+);
+
+function fixQuickCrc(): void {
+  quickContent.value = fixCrcTail(quickContent.value);
+}
+
+/** HEX 框敲入即清洗：非法字符当场剔除，不留到发送时才发现 */
+function onQuickInput(e: Event): void {
+  if (quickMode.value !== "hex") return;
+  const cleaned = sanitizeHexInput((e.target as HTMLInputElement).value);
+  if (cleaned !== quickContent.value) quickContent.value = cleaned;
+}
+
+function onItemInput(item: SendItem, e: Event): void {
+  if (item.mode !== "hex") return;
+  const cleaned = sanitizeHexInput((e.target as HTMLInputElement).value);
+  if (cleaned !== item.content) item.content = cleaned;
+}
+
+/** Enter 发送 / Shift+Enter 换行；输入法组字中的 Enter 只上屏不发送 */
+function onQuickEnter(e: KeyboardEvent): void {
+  if (e.isComposing) return;
+  if (!e.shiftKey) {
+    e.preventDefault();
+    quickSend();
+  }
+}
+
+interface ItemStatus {
+  text: string;
+  kind: "error" | "ok" | "warn";
+  fixable: boolean;
+}
+
+function itemStatus(item: SendItem): ItemStatus | null {
+  if (item.mode !== "hex") return null;
+  const a = analyzeHex(item.content);
+  if (!a) return null;
+  if (a.danglingNibble) return { text: "缺半字节", kind: "error", fixable: false };
+  if (a.crcTail) {
+    return a.crcTail.match
+      ? { text: `${a.bytes.length}B CRC✓`, kind: "ok", fixable: false }
+      : { text: `${a.bytes.length}B CRC≠`, kind: "warn", fixable: true };
+  }
+  return { text: `${a.bytes.length}B`, kind: "ok", fixable: false };
+}
+
+function fixItemCrc(item: SendItem): void {
+  item.content = fixCrcTail(item.content);
+}
+
 /** 常用条目（持久化） */
 const items = ref<SendItem[]>(loadItems());
 watch(items, (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)), { deep: true });
@@ -72,6 +131,13 @@ function doSend(target: string, p: Payload): void {
   if (!target) {
     state.lastError = "请先选择目标连接";
     return;
+  }
+  if (p.mode === "hex") {
+    const a = analyzeHex(p.content);
+    if (a?.danglingNibble) {
+      state.lastError = "帧不完整：多出半个字节，补一位或删一位";
+      return;
+    }
   }
   sendMsg({
     t: "send",
@@ -214,34 +280,62 @@ onUnmounted(() => {
 
 <template>
   <section class="send">
-    <!-- 快捷发送条：敲完即发 -->
+    <!-- 快捷发送区：控件一行 + 内容一框，敲完即发 -->
     <div class="quick">
-      <select v-model="quickTarget" class="target">
-        <option value="" disabled>目标连接…</option>
-        <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
-      </select>
-      <select v-model="quickMode" class="mode">
-        <option value="hex">HEX</option>
-        <option value="text">文本</option>
-      </select>
-      <select v-if="quickMode === 'text'" v-model="quickEncoding" class="mode">
-        <option value="utf-8">UTF-8</option>
-        <option value="gbk">GBK</option>
-      </select>
-      <input
+      <div class="quick-controls">
+        <select v-model="quickTarget" class="target">
+          <option value="" disabled>目标连接…</option>
+          <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
+        </select>
+        <select v-model="quickMode" class="mode">
+          <option value="hex">HEX</option>
+          <option value="text">文本</option>
+        </select>
+        <select v-if="quickMode === 'text'" v-model="quickEncoding" class="mode">
+          <option value="utf-8">UTF-8</option>
+          <option value="gbk">GBK</option>
+        </select>
+        <span class="spacer" />
+        <button class="primary" @click="quickSend">发送</button>
+        <label class="loop-label" title="循环间隔（毫秒）">
+          <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
+        </label>
+        <button :class="{ looping: quickLooping }" @click="toggleQuickLoop">
+          {{ quickLooping ? "停循环" : "循环" }}
+        </button>
+        <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
+      </div>
+      <textarea
         v-model="quickContent"
-        class="content"
+        class="quick-editor"
+        rows="3"
         :placeholder="quickMode === 'hex' ? '01 03 00 00 00 02 C4 0B' : '要发送的文本'"
-        @keydown.enter="quickSend"
+        title="Enter 发送 · Shift+Enter 换行"
+        @input="onQuickInput"
+        @keydown.enter="onQuickEnter"
       />
-      <button class="primary" @click="quickSend">发送</button>
-      <label class="loop-label" title="循环间隔（毫秒）">
-        <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
-      </label>
-      <button :class="{ looping: quickLooping }" @click="toggleQuickLoop">
-        {{ quickLooping ? "停循环" : "循环" }}
-      </button>
-      <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
+      <div v-if="quickAnalysis" class="feedback">
+        <span
+          v-for="(b, i) in quickAnalysis.bytes.slice(0, CHIP_LIMIT)"
+          :key="i"
+          class="chip"
+        >{{ b }}</span>
+        <span v-if="quickAnalysis.bytes.length > CHIP_LIMIT" class="dim">
+          +{{ quickAnalysis.bytes.length - CHIP_LIMIT }} 字节
+        </span>
+        <span v-if="quickAnalysis.danglingNibble" class="chip bad">
+          {{ quickAnalysis.danglingNibble }}_
+        </span>
+        <span class="spacer" />
+        <span v-if="quickAnalysis.danglingNibble" class="err">缺半个字节</span>
+        <template v-else-if="quickAnalysis.crcTail">
+          <span v-if="quickAnalysis.crcTail.match" class="ok">CRC ✓</span>
+          <button v-else class="link" title="用正确的 CRC 尾缀替换末 2 字节" @click="fixQuickCrc">
+            CRC 应为 {{ quickAnalysis.crcTail.expected }}，点此修正
+          </button>
+        </template>
+        <span class="dim">{{ quickAnalysis.bytes.length }} 字节</span>
+      </div>
     </div>
 
     <!-- 常用条目 -->
@@ -261,7 +355,15 @@ onUnmounted(() => {
           v-model="item.content"
           class="content"
           :placeholder="item.mode === 'hex' ? '01 03 …' : '文本内容'"
+          @input="onItemInput(item, $event)"
         />
+        <span
+          v-if="itemStatus(item)"
+          class="hex-status"
+          :class="itemStatus(item)?.kind"
+          :title="itemStatus(item)?.fixable ? '点击用正确的 CRC 尾缀替换末 2 字节' : undefined"
+          @click="itemStatus(item)?.fixable && fixItemCrc(item)"
+        >{{ itemStatus(item)?.text }}</span>
         <input
           v-model.number="item.loopMs"
           class="loop-ms"
@@ -289,11 +391,16 @@ onUnmounted(() => {
 }
 .quick {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
+}
+.quick-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 .quick .target {
   max-width: 200px;
@@ -302,9 +409,49 @@ onUnmounted(() => {
 .quick .mode {
   flex-shrink: 0;
 }
-.quick .content {
+.quick-editor {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 6px 8px;
+}
+.quick-editor:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.chip {
+  font-size: 12px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--panel-2);
+}
+.chip.bad {
+  color: var(--error);
+  border-color: var(--error);
+}
+.spacer {
   flex: 1;
-  min-width: 120px;
+}
+.ok {
+  color: var(--in);
+}
+.err {
+  color: var(--error);
+}
+.link {
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
 }
 .items-head {
   display: flex;
@@ -352,6 +499,20 @@ onUnmounted(() => {
 .item .content {
   flex: 1;
   min-width: 0;
+}
+.hex-status {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.hex-status.ok {
+  color: var(--in);
+}
+.hex-status.warn {
+  color: var(--out);
+  cursor: pointer;
+}
+.hex-status.error {
+  color: var(--error);
 }
 .loop-ms {
   width: 64px;
