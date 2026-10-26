@@ -51,7 +51,9 @@ export function fixCrcTail(content: string): string {
 export function sanitizeHexInput(v: string): string {
   return v
     .replace(/[\s,，、;；:：\-_.　]+/g, " ")
-    .replace(/0[xX](?=[0-9a-fA-F])/g, "")
+    // 0x 前缀：后随 hex 字符（粘贴成串）或正悬在串尾（逐键敲入时 x 先到、hex 还没到）都摘掉，
+    // 否则 x 会被下面的字符清洗先行剔除，"0x01" 逐键敲出来就成了 "001"
+    .replace(/0[xX](?=[0-9a-fA-F]|$)/g, "")
     .replace(/[^0-9a-fA-F ]/g, "")
     .replace(/ +/g, " ");
 }
