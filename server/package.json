@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/shared/checksum.test.ts src/shared/hex.test.ts src/framing/idle-grouper.test.ts src/shared/frame-fold.test.ts"
+    "test": "node --import tsx --test src/shared/checksum.test.ts src/shared/hex.test.ts src/framing/idle-grouper.test.ts src/shared/frame-fold.test.ts src/transport/serial.test.ts"
   },
   "dependencies": {
     "iconv-lite": "^0.6.3",

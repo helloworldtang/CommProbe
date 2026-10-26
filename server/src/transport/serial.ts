@@ -36,10 +36,22 @@ async function loadSerialport(): Promise<SerialPortModule> {
   }
 }
 
-/** 枚举系统串口；串口模块缺失时抛出可读错误 */
+/** 系统噪声口模式：内置虚拟口，选了必失败，列表里直接滤掉（参照 Arduino IDE 的做法） */
+const NOISE_PORT_PATTERNS = [
+  /Bluetooth-Incoming-Port/i, // macOS：蓝牙 SPP 监听口，每台 Mac 都有
+  /debug-console/i, // macOS：Apple Silicon 内核调试控制台
+];
+
+/** 判断一个串口路径是否为系统噪声口 */
+export function isNoisePort(path: string): boolean {
+  return NOISE_PORT_PATTERNS.some((re) => re.test(path));
+}
+
+/** 枚举系统串口（滤掉噪声口）；串口模块缺失时抛出可读错误 */
 export async function listSerialPorts(): Promise<PortInfo[]> {
   const mod = await loadSerialport();
-  return mod.SerialPort.list();
+  const all = await mod.SerialPort.list();
+  return all.filter((p) => !isNoisePort(p.path));
 }
 
 export class SerialTransport implements Transport {

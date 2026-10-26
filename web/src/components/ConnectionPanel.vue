@@ -108,6 +108,14 @@ function refreshSerialPorts(): void {
   sendMsg({ t: "serial-list" });
 }
 
+/* 切到串口类型时自动枚举一次——省掉「先点刷新才知道有没有设备」 */
+watch(
+  () => form.kind,
+  (k) => {
+    if (k === "serial") refreshSerialPorts();
+  },
+);
+
 /* 「去打开连接」引导：发送区点一下，这里闪两下告诉用户配置在哪 */
 const pulsing = ref(false);
 let pulseTimer: ReturnType<typeof setTimeout> | undefined;
@@ -162,7 +170,9 @@ watch(
     <template v-else>
       <div class="row">
         <select v-model="form.serialPath">
-          <option value="" disabled>选择串口…</option>
+          <option value="" disabled>
+            {{ state.serialPorts.length ? "选择串口…" : "未检测到串口设备——插上后点「刷新」" }}
+          </option>
           <option v-for="p in state.serialPorts" :key="p.path" :value="p.path">
             {{ p.path }}{{ p.manufacturer ? ` (${p.manufacturer})` : "" }}
           </option>
