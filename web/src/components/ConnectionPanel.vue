@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
+import AppSelect from "./AppSelect.vue";
 import type {
   SerialParams,
   TcpClientParams,
@@ -18,6 +19,11 @@ const KIND_LABELS: Record<TransportKind, string> = {
   serial: "串口",
 };
 
+const kindOptions = Object.entries(KIND_LABELS).map(([value, label]) => ({
+  value: value as TransportKind,
+  label,
+}));
+
 /** 主按钮动词随类型走：客户端主动「连接」、服务端「监听」等入、UDP 绑定口「启动」、串口「打开」 */
 const ACTION_LABELS: Record<TransportKind, string> = {
   "tcp-client": "连接",
@@ -27,6 +33,7 @@ const ACTION_LABELS: Record<TransportKind, string> = {
 };
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
+const baudOptions = BAUD_RATES.map((b) => ({ value: b, label: String(b) }));
 
 const form = reactive({
   kind: "tcp-client" as TransportKind,
@@ -135,9 +142,7 @@ watch(
 <template>
   <!-- 连接条：操作带的第一阶段——类型 → 参数 → 打开，从左到右就是依赖顺序 -->
   <section class="conn">
-    <select v-model="form.kind" class="kind" title="连接类型">
-      <option v-for="(label, kind) in KIND_LABELS" :key="kind" :value="kind">{{ label }}</option>
-    </select>
+    <AppSelect v-model="form.kind" class="kind" :options="kindOptions" title="连接类型" />
 
     <template v-if="form.kind === 'tcp-client'">
       <input v-model="form.host" class="host" placeholder="地址" title="对端地址" />
@@ -158,18 +163,17 @@ watch(
       <input v-model.number="form.remotePort" class="num" type="number" placeholder="远端端口" />
     </template>
     <template v-else-if="form.kind === 'serial'">
-      <select v-model="form.serialPath" class="port-sel">
-        <option value="" disabled>
-          {{ state.serialPorts.length ? "选择串口…" : "未检测到串口设备——插上后点「刷新」" }}
-        </option>
-        <option v-for="p in state.serialPorts" :key="p.path" :value="p.path">
-          {{ p.path }}{{ p.manufacturer ? ` (${p.manufacturer})` : "" }}
-        </option>
-      </select>
+      <AppSelect
+        v-model="form.serialPath"
+        class="port-sel"
+        :options="state.serialPorts.map((p) => ({
+          value: p.path,
+          label: p.path + (p.manufacturer ? ` (${p.manufacturer})` : ''),
+        }))"
+        :placeholder="state.serialPorts.length ? '选择串口…' : '未检测到串口设备——插上后点「刷新」'"
+      />
       <button title="重新枚举串口设备" @click="refreshSerialPorts">刷新</button>
-      <select v-model.number="form.baudRate" class="num-sel" title="波特率">
-        <option v-for="b in BAUD_RATES" :key="b" :value="b">{{ b }}</option>
-      </select>
+      <AppSelect v-model="form.baudRate" class="num-sel" :options="baudOptions" title="波特率" />
       <div class="params-pop">
         <button
           class="params-btn"
@@ -181,23 +185,34 @@ watch(
         <div v-if="paramsOpen" class="overlay" @click="paramsOpen = false" />
         <div v-if="paramsOpen" class="pop">
           <label>数据位
-            <select v-model.number="form.dataBits">
-              <option :value="5">5</option><option :value="6">6</option>
-              <option :value="7">7</option><option :value="8">8（常用）</option>
-            </select>
+            <AppSelect
+              v-model="form.dataBits"
+              :options="[
+                { value: 5, label: '5' },
+                { value: 6, label: '6' },
+                { value: 7, label: '7' },
+                { value: 8, label: '8（常用）' },
+              ]"
+            />
           </label>
           <label>校验
-            <select v-model="form.parity">
-              <option value="none">无（N）</option>
-              <option value="even">偶（E）</option>
-              <option value="odd">奇（O）</option>
-            </select>
+            <AppSelect
+              v-model="form.parity"
+              :options="[
+                { value: 'none', label: '无（N）' },
+                { value: 'even', label: '偶（E）' },
+                { value: 'odd', label: '奇（O）' },
+              ]"
+            />
           </label>
           <label>停止位
-            <select v-model.number="form.stopBits">
-              <option :value="1">1（常用）</option>
-              <option :value="2">2</option>
-            </select>
+            <AppSelect
+              v-model="form.stopBits"
+              :options="[
+                { value: 1, label: '1（常用）' },
+                { value: 2, label: '2' },
+              ]"
+            />
           </label>
           <label><input v-model="form.flowControl" type="checkbox" /> 硬件流控</label>
         </div>

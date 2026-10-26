@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 
+import AppSelect from "./components/AppSelect.vue";
 import ChecksumPanel from "./components/ChecksumPanel.vue";
 import LogPanel from "./components/LogPanel.vue";
 import SendPanel from "./components/SendPanel.vue";
@@ -214,11 +215,16 @@ onMounted(() => {
           <svg viewBox="0 0 16 16" width="15" height="15"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" /><rect x="9" y="4" width="4" height="8" rx="1" fill="currentColor" /></svg>
         </button>
       </div>
-      <select v-model="theme" class="theme" title="界面主题">
-        <option value="auto">跟随系统</option>
-        <option value="dark">暗色</option>
-        <option value="light">亮色</option>
-      </select>
+      <AppSelect
+        v-model="theme"
+        class="theme"
+        title="界面主题"
+        :options="[
+          { value: 'auto', label: '跟随系统' },
+          { value: 'dark', label: '暗色' },
+          { value: 'light', label: '亮色' },
+        ]"
+      />
       <div class="pop-wrap">
         <button :class="{ on: checksumOpen }" @click="checksumOpen = !checksumOpen">
           校验计算器

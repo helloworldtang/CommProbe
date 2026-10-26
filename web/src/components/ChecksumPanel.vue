@@ -6,6 +6,12 @@ import {
   checksumHex,
   type ChecksumAlgorithm,
 } from "../../../server/src/shared/checksum";
+import AppSelect from "./AppSelect.vue";
+
+const algoOptions = Object.entries(CHECKSUM_ALGORITHMS).map(([value, spec]) => ({
+  value: value as ChecksumAlgorithm,
+  label: spec.label,
+}));
 import { encodeUtf8, parseHex } from "../../../server/src/shared/hex";
 
 const algo = ref<ChecksumAlgorithm>("crc16-modbus");
@@ -41,17 +47,16 @@ async function copy(): Promise<void> {
   <section>
     <h2>校验计算器</h2>
     <div class="row">
-      <select v-model="algo">
-        <option v-for="(spec, key) in CHECKSUM_ALGORITHMS" :key="key" :value="key">
-          {{ spec.label }}
-        </option>
-      </select>
+      <AppSelect v-model="algo" :options="algoOptions" />
     </div>
     <div class="row">
-      <select v-model="inputMode">
-        <option value="hex">HEX</option>
-        <option value="text">文本(UTF-8)</option>
-      </select>
+      <AppSelect
+        v-model="inputMode"
+        :options="[
+          { value: 'hex', label: 'HEX' },
+          { value: 'text', label: '文本(UTF-8)' },
+        ]"
+      />
     </div>
     <div class="row">
       <textarea
@@ -78,7 +83,7 @@ h2 {
 .row {
   margin-bottom: 6px;
 }
-.row select {
+.row .app-select {
   width: 100%;
 }
 textarea {

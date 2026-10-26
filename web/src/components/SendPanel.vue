@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
 import type { TextEncoding } from "../../../server/src/shared/protocol";
+import AppSelect from "./AppSelect.vue";
 import ConnectionPanel from "./ConnectionPanel.vue";
 import { analyzeHex, fixCrcTail, sanitizeHexInput, type HexAnalysis } from "../hex-status";
 
@@ -304,25 +305,39 @@ onUnmounted(() => {
     <!-- 快捷发送区：控件一行 + 内容一框，敲完即发 -->
     <div class="quick">
       <div class="quick-controls">
-        <select
+        <AppSelect
+          v-if="openConnections.length !== 1"
           v-model="quickTarget"
           class="target"
+          :options="openConnections.map((c) => ({ value: c.id, label: c.label }))"
+          :placeholder="openConnections.length ? '目标连接…' : '无连接'"
           :disabled="!openConnections.length"
           :title="openConnections.length ? '发送目标' : '上方开启一条连接后自动选中'"
+        />
+        <span
+          v-else
+          class="target-chip"
+          :title="`发送目标（唯一连接，已自动选中）：${openConnections[0].label}`"
         >
-          <option value="" disabled>
-            {{ openConnections.length ? "目标连接…" : "无连接" }}
-          </option>
-          <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
-        </select>
-        <select v-model="quickMode" class="mode">
-          <option value="hex">HEX</option>
-          <option value="text">文本</option>
-        </select>
-        <select v-if="quickMode === 'text'" v-model="quickEncoding" class="mode">
-          <option value="utf-8">UTF-8</option>
-          <option value="gbk">GBK</option>
-        </select>
+          → {{ openConnections[0].label }}
+        </span>
+        <AppSelect
+          v-model="quickMode"
+          class="mode"
+          :options="[
+            { value: 'hex', label: 'HEX' },
+            { value: 'text', label: '文本' },
+          ]"
+        />
+        <AppSelect
+          v-if="quickMode === 'text'"
+          v-model="quickEncoding"
+          class="mode"
+          :options="[
+            { value: 'utf-8', label: 'UTF-8' },
+            { value: 'gbk', label: 'GBK' },
+          ]"
+        />
         <span class="spacer" />
         <label class="loop-label" title="循环间隔（毫秒）">
           <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
@@ -332,8 +347,8 @@ onUnmounted(() => {
         </button>
         <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
       </div>
-      <!-- 搜索引擎式：输入框与发送按钮同排，按钮正方形大且好点 -->
-      <div class="quick-row">
+      <!-- 搜索引擎式：输入框与发送按钮同排；缺依赖禁用时 hover 有响应 -->
+      <div class="quick-row" :class="{ blocked: !quickTarget }">
         <textarea
           v-model="quickContent"
           class="quick-editor"
@@ -501,6 +516,52 @@ onUnmounted(() => {
 .quick-row {
   display: flex;
   gap: 6px;
+}
+/* 缺依赖禁用时：hover 有响应——行内控件亮琥珀边 + 头顶浮出带箭头的指引（箭头指向本行，文案指明去上方） */
+.quick-row.blocked {
+  position: relative;
+}
+.quick-row.blocked:hover .quick-editor,
+.quick-row.blocked:hover .send-btn {
+  border-color: var(--out);
+}
+.quick-row.blocked:hover::before {
+  content: "这一行还没有目标——在上方连接条点「连接 / 监听」开启后即可输入发送";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -40px;
+  z-index: 20;
+  background: var(--panel);
+  border: 1px solid var(--out);
+  border-radius: var(--radius-s);
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+}
+.quick-row.blocked:hover::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -8px;
+  z-index: 21;
+  border: 6px solid transparent;
+  border-top-color: var(--out);
+  pointer-events: none;
+}
+.target-chip {
+  color: var(--in);
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .quick-editor {
   flex: 1;

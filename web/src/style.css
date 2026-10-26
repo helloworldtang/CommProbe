@@ -68,11 +68,10 @@ textarea {
   padding: 3px 6px;
 }
 
-/* 原生 select 的弹出菜单跟随主题（color-scheme 由 :root 继承，这里只补菜单项配色） */
-option,
-optgroup {
-  background: var(--panel-2);
-  color: var(--text);
+/* 原生 select 的弹出菜单由系统绘制、CSS 管不进去——项目内已全部改用自绘 AppSelect；
+   checkbox 用 accent-color 跟随主题强调色 */
+input[type="checkbox"] {
+  accent-color: var(--accent);
 }
 
 input:focus,

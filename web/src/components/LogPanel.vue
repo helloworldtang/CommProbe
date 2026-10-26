@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 
 import { state } from "../store";
+import AppSelect from "./AppSelect.vue";
 import { foldByGap } from "../../../server/src/shared/frame-fold";
 import { decodeText, normalizeHex, parseHex } from "../../../server/src/shared/hex";
 
@@ -175,11 +176,14 @@ function clear(): void {
   <section class="log">
     <div class="toolbar">
       <input v-model="filterText" class="filter" placeholder="过滤：hex 片段或文本" />
-      <select v-model="dirFilter">
-        <option value="all">全部方向</option>
-        <option value="in">仅接收</option>
-        <option value="out">仅发送</option>
-      </select>
+      <AppSelect
+        v-model="dirFilter"
+        :options="[
+          { value: 'all', label: '全部方向' },
+          { value: 'in', label: '仅接收' },
+          { value: 'out', label: '仅发送' },
+        ]"
+      />
       <label><input v-model="collapse" type="checkbox" /> 折叠重复帧</label>
       <label v-if="collapse">
         窗口
@@ -187,16 +191,22 @@ function clear(): void {
         s
       </label>
       <label>显示</label>
-      <select v-model="display">
-        <option value="both">HEX+文本</option>
-        <option value="hex">仅 HEX</option>
-        <option value="text">仅文本</option>
-      </select>
+      <AppSelect
+        v-model="display"
+        :options="[
+          { value: 'both', label: 'HEX+文本' },
+          { value: 'hex', label: '仅 HEX' },
+          { value: 'text', label: '仅文本' },
+        ]"
+      />
       <label>编码</label>
-      <select v-model="encoding">
-        <option value="utf-8">UTF-8</option>
-        <option value="gbk">GBK</option>
-      </select>
+      <AppSelect
+        v-model="encoding"
+        :options="[
+          { value: 'utf-8', label: 'UTF-8' },
+          { value: 'gbk', label: 'GBK' },
+        ]"
+      />
       <span class="dim">{{ totalShown }}</span>
       <button @click="clear">清空</button>
     </div>
