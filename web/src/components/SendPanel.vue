@@ -114,6 +114,13 @@ function fixItemCrc(item: SendItem): void {
   item.content = fixCrcTail(item.content);
 }
 
+/** 服务端目标显示客户端数（发送是广播语义，让用户知道会发给几个对端） */
+function clientSuffix(id: string): string {
+  const c = state.connections.get(id);
+  const m = /客户端 (\d+) 个/.exec(c?.detail ?? "");
+  return m ? `（客户端 ${m[1]}，广播）` : "";
+}
+
 /** 常用条目（持久化） */
 const items = ref<SendItem[]>(loadItems());
 watch(items, (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)), { deep: true });
@@ -133,6 +140,28 @@ watch(openConnections, (list) => {
   }
   if (!list.some((c) => c.id === quickTarget.value)) quickTarget.value = list[0].id;
 });
+
+/**
+ * 目标对发送是否真正可用：TCP 服务端是广播语义，必须已有客户端连入
+ * （状态详情形如 ":9000 客户端 2 个"）；刚监听还没人连时不给点，点了必报错。
+ */
+const targetReady = computed(() => {
+  if (!quickTarget.value) return false;
+  const c = state.connections.get(quickTarget.value);
+  if (!c || c.state !== "open") return false;
+  if (c.kind === "tcp-server") {
+    const m = /客户端 (\d+) 个/.exec(c.detail ?? "");
+    return !!m && Number(m[1]) > 0;
+  }
+  return true;
+});
+
+/** 禁用指引文案：无连接 vs 已监听但无客户端 */
+const rowHint = computed(() =>
+  quickTarget.value
+    ? "已监听但还没有客户端连入——对端连上后即可发送"
+    : "这一行还没有目标——在上方连接条点「连接 / 监听」开启后即可输入发送",
+);
 
 const loops = new Map<string, ReturnType<typeof setInterval>>();
 
@@ -319,7 +348,7 @@ onUnmounted(() => {
           class="target-chip"
           :title="`发送目标（唯一连接，已自动选中）：${openConnections[0].label}`"
         >
-          → {{ openConnections[0].label }}
+          → {{ openConnections[0].label }}{{ clientSuffix(openConnections[0].id) }}
         </span>
         <AppSelect
           v-model="quickMode"
@@ -342,39 +371,43 @@ onUnmounted(() => {
         <label class="loop-label" title="循环间隔（毫秒）">
           <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
         </label>
-        <button :class="{ looping: quickLooping }" :disabled="!quickTarget" @click="toggleQuickLoop">
+        <button :class="{ looping: quickLooping }" :disabled="!targetReady" @click="toggleQuickLoop">
           {{ quickLooping ? "停循环" : "循环" }}
         </button>
         <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
       </div>
       <!-- 搜索引擎式：输入框与发送按钮同排；缺依赖禁用时 hover 有响应 -->
-      <div class="quick-row" :class="{ blocked: !quickTarget }">
+      <div class="quick-row" :class="{ blocked: !targetReady }" :data-hint="rowHint">
         <textarea
           v-model="quickContent"
           class="quick-editor"
-          :disabled="!quickTarget"
+          :disabled="!targetReady"
           :placeholder="
-            quickTarget
+            targetReady
               ? quickMode === 'hex'
                 ? '01 03 00 00 00 02 C4 0B'
                 : '要发送的文本'
               : '↖ 上方选择类型并点「连接 / 监听」，开启一条连接后这里即可输入'
           "
-          :title="quickTarget ? 'Enter 发送 · Shift+Enter 换行' : '上方开启一条连接后即可输入'"
+          :title="targetReady ? 'Enter 发送 · Shift+Enter 换行' : '上方开启一条连接后即可输入'"
           @input="onQuickInput"
           @keydown.enter="onQuickEnter"
         />
         <button
           class="primary send-btn"
-          :disabled="!quickTarget"
+          :disabled="!targetReady"
           title="Enter 也可以发送"
           @click="quickSend"
         >
           发送
         </button>
       </div>
-      <div v-if="!quickTarget" class="feedback enable-hint">
-        <span class="dim">↖ 先在上方连接条点「连接 / 监听」开启一条连接——编辑框、发送、循环随之恢复可用</span>
+      <div v-if="!targetReady" class="feedback enable-hint">
+        <span class="dim">{{
+          quickTarget
+            ? "◎ 已监听——等待客户端连入后，这里即可发送（届时为广播：发给所有已连入的客户端）"
+            : "↖ 先在上方连接条点「连接 / 监听」开启一条连接——编辑框、发送、循环随之恢复可用"
+        }}</span>
       </div>
       <div v-else-if="quickAnalysis" class="feedback">
         <span
@@ -406,7 +439,7 @@ onUnmounted(() => {
       <label>序列间隔</label>
       <input v-model.number="gapMs" class="gap" type="number" min="0" step="50" />
       <span class="dim">ms</span>
-      <button class="primary" :disabled="!quickTarget" @click="sendSequence">按顺序全部发送</button>
+      <button class="primary" :disabled="!targetReady" @click="sendSequence">按顺序全部发送</button>
       <button @click="addItem">+ 新增</button>
     </div>
     <div class="items">
@@ -434,10 +467,10 @@ onUnmounted(() => {
           placeholder="循环ms"
           title="循环间隔（毫秒），0 表示不用循环"
         />
-        <button class="primary" :disabled="!quickTarget" @click="sendItem(item)">发送</button>
+        <button class="primary" :disabled="!targetReady" @click="sendItem(item)">发送</button>
         <button
           :class="{ looping: isLooping(item.id) }"
-          :disabled="!quickTarget"
+          :disabled="!targetReady"
           @click="toggleItemLoop(item)"
         >
           {{ isLooping(item.id) ? "停" : "循环" }}
@@ -526,7 +559,7 @@ onUnmounted(() => {
   border-color: var(--out);
 }
 .quick-row.blocked:hover::before {
-  content: "这一行还没有目标——在上方连接条点「连接 / 监听」开启后即可输入发送";
+  content: attr(data-hint);
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
