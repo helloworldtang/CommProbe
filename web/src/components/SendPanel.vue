@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
 import type { TextEncoding } from "../../../server/src/shared/protocol";
+import ConnectionPanel from "./ConnectionPanel.vue";
 import { analyzeHex, fixCrcTail, sanitizeHexInput, type HexAnalysis } from "../hex-status";
 
 interface SendItem {
@@ -289,23 +290,17 @@ onUnmounted(() => {
 
 <template>
   <section class="send">
+    <!-- 操作带：①连接（正上方）→ ②组帧发送 → ③常用，从左到右=依赖顺序 -->
+    <ConnectionPanel />
     <!-- 快捷发送区：控件一行 + 内容一框，敲完即发 -->
     <div class="quick">
       <div class="quick-controls">
         <select v-model="quickTarget" class="target">
           <option value="" disabled>
-            {{ openConnections.length ? "目标连接…" : "先在左侧「连接」打开一条" }}
+            {{ openConnections.length ? "目标连接…" : "先在上方打开一条连接（自动选中）" }}
           </option>
           <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
         </select>
-        <button
-          v-if="!openConnections.length"
-          class="link"
-          title="不知道在哪配连接？点一下，左侧配置区会闪起来"
-          @click="state.pulseConnections = Date.now()"
-        >
-          去哪配？
-        </button>
         <select v-model="quickMode" class="mode">
           <option value="hex">HEX</option>
           <option value="text">文本</option>
@@ -545,17 +540,6 @@ onUnmounted(() => {
 }
 .loop-label {
   display: flex;
-}
-.primary {
-  background: var(--accent);
-  color: #08121d;
-  border-color: var(--accent);
-  font-weight: 600;
-}
-.looping {
-  background: var(--out);
-  color: #241300;
-  border-color: var(--out);
 }
 .dim {
   color: var(--text-dim);

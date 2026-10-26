@@ -54,6 +54,18 @@ button {
 button:hover {
   border-color: var(--accent);
 }
+/* 主操作按钮：全局样式——子组件的 scoped CSS 作用不到兄弟面板的按钮 */
+.primary {
+  background: var(--accent);
+  color: #08121d;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.looping {
+  background: var(--out);
+  color: #241300;
+  border-color: var(--out);
+}
 
 label {
   color: var(--text-dim);

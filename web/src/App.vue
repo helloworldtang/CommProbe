@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import ChecksumPanel from "./components/ChecksumPanel.vue";
-import ConnectionPanel from "./components/ConnectionPanel.vue";
 import LogPanel from "./components/LogPanel.vue";
 import SendPanel from "./components/SendPanel.vue";
 import { state } from "./store";
@@ -22,12 +21,13 @@ watch(
   },
 );
 
+/* ---- 校验计算器：低频工具，收进顶栏浮层，不占主界面 ---- */
+const checksumOpen = ref(false);
+
 /* ---- 可拖拽面板（业界惯例：拖动调大小 / 双击复位 / 尺寸记忆，同 VS Code） ---- */
 
-const ASIDE_KEY = "commprobe.layout.asideWidth";
 const PANEL_KEY = "commprobe.layout.sendHeight";
-const ASIDE_DEFAULT = 300;
-const PANEL_DEFAULT = 240;
+const PANEL_DEFAULT = 320;
 
 function loadNum(key: string, fallback: number): number {
   const raw = localStorage.getItem(key);
@@ -35,7 +35,6 @@ function loadNum(key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-const asideWidth = ref(loadNum(ASIDE_KEY, ASIDE_DEFAULT));
 const sendHeight = ref(loadNum(PANEL_KEY, PANEL_DEFAULT));
 
 function clamp(v: number, min: number, max: number): number {
@@ -74,16 +73,6 @@ function startDrag(
   document.addEventListener("mouseup", onUp);
 }
 
-const dragAside = (e: MouseEvent) =>
-  startDrag(e, "x", {
-    min: 220,
-    max: 560,
-    invert: false,
-    refValue: () => asideWidth.value,
-    apply: (v) => (asideWidth.value = v),
-    save: () => localStorage.setItem(ASIDE_KEY, String(asideWidth.value)),
-  });
-
 const dragSend = (e: MouseEvent) =>
   startDrag(e, "y", {
     min: 140,
@@ -94,10 +83,6 @@ const dragSend = (e: MouseEvent) =>
     save: () => localStorage.setItem(PANEL_KEY, String(sendHeight.value)),
   });
 
-const resetAside = () => {
-  asideWidth.value = ASIDE_DEFAULT;
-  localStorage.setItem(ASIDE_KEY, String(ASIDE_DEFAULT));
-};
 const resetSend = () => {
   sendHeight.value = PANEL_DEFAULT;
   localStorage.setItem(PANEL_KEY, String(PANEL_DEFAULT));
@@ -118,18 +103,18 @@ onMounted(() => {
       <span class="brand">CommProbe</span>
       <span class="badge" :class="{ ok: state.wsReady }">{{ wsBadge }}</span>
       <span v-if="state.lastError" class="error-banner">{{ state.lastError }}</span>
+      <span class="spacer" />
+      <div class="pop-wrap">
+        <button :class="{ on: checksumOpen }" @click="checksumOpen = !checksumOpen">
+          校验计算器
+        </button>
+        <div v-if="checksumOpen" class="overlay" @click="checksumOpen = false" />
+        <div v-if="checksumOpen" class="pop">
+          <ChecksumPanel />
+        </div>
+      </div>
     </header>
     <div class="body">
-      <aside :style="{ width: asideWidth + 'px' }">
-        <ConnectionPanel />
-        <ChecksumPanel />
-      </aside>
-      <div
-        class="divider-v"
-        title="拖动调宽，双击复位"
-        @mousedown="dragAside"
-        @dblclick="resetAside"
-      />
       <main>
         <LogPanel />
         <div
@@ -183,30 +168,37 @@ onMounted(() => {
   border-radius: 4px;
   padding: 2px 8px;
 }
+.spacer {
+  flex: 1;
+}
+.pop-wrap {
+  position: relative;
+}
+.pop-wrap .on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+}
+.pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 15;
+  width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
 .body {
   flex: 1;
   display: flex;
   min-height: 0;
-}
-aside {
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  flex-shrink: 0;
-}
-.divider-v {
-  width: 5px;
-  flex-shrink: 0;
-  cursor: col-resize;
-  background: transparent;
-  transition: background 0.15s;
-}
-.divider-v:hover {
-  background: var(--accent);
 }
 main {
   display: flex;
