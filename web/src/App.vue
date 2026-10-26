@@ -98,8 +98,10 @@ const dragSideRight = (e: MouseEvent) =>
     save: () => localStorage.setItem(SIDE_KEY, String(sendWidth.value)),
   });
 
-/* DevTools 式收起：收起时操作带缩成一条；拖拽条也收掉 */
-const sendCollapsed = ref(false);
+/* DevTools 式收起：收起时操作带缩成一条；拖拽条也收掉；状态持久化——重开延续上次的布局习惯 */
+const COLLAPSE_KEY = "commprobe.layout.sendCollapsed";
+const sendCollapsed = ref(localStorage.getItem(COLLAPSE_KEY) === "1");
+watch(sendCollapsed, (v) => localStorage.setItem(COLLAPSE_KEY, v ? "1" : "0"));
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max);

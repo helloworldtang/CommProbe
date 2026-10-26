@@ -5,8 +5,19 @@ import { state } from "../store";
 import { foldByGap } from "../../../server/src/shared/frame-fold";
 import { decodeText, normalizeHex, parseHex } from "../../../server/src/shared/hex";
 
-const encoding = ref<"utf-8" | "gbk">("utf-8");
-const display = ref<"both" | "hex" | "text">("both");
+/* 显示偏好持久化：重开延续上次的看法（过滤词是临时工作状态，不持久化） */
+const PREF_KEY = "commprobe.log-prefs";
+function loadPrefs(): Record<string, unknown> {
+  try {
+    return JSON.parse(localStorage.getItem(PREF_KEY) ?? "{}") as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+const prefs = loadPrefs();
+
+const encoding = ref<"utf-8" | "gbk">((prefs.encoding as "utf-8" | "gbk") ?? "utf-8");
+const display = ref<"both" | "hex" | "text">((prefs.display as "both" | "hex" | "text") ?? "both");
 
 /* ---- 聊天室式滚动：贴底时新帧自动跟滚；用户上翻则停住不打扰，并数着新帧 ---- */
 /** 是否贴在底部（距底 < 40px 视为贴底） */
@@ -31,11 +42,26 @@ function jumpToBottom(): void {
 /** 帧过滤：hex 片段（如 "08 00"）或文本关键字，不匹配的帧隐藏 */
 const filterText = ref("");
 /** 方向筛选 */
-const dirFilter = ref<"all" | "in" | "out">("all");
+const dirFilter = ref<"all" | "in" | "out">((prefs.dirFilter as "all" | "in" | "out") ?? "all");
 /** 折叠重复帧：相同内容、间隔在窗口内的高频帧聚合为一行；超窗自动分段（心跳中断可见） */
-const collapse = ref(true);
+const collapse = ref((prefs.collapse as boolean) ?? true);
 /** 折叠窗口（秒）：相邻两帧间隔超过它就断开为新的一段 */
-const foldWindowSec = ref(30);
+const foldWindowSec = ref((prefs.foldWindowSec as number) ?? 30);
+
+watch(
+  [encoding, display, dirFilter, collapse, foldWindowSec],
+  () =>
+    localStorage.setItem(
+      PREF_KEY,
+      JSON.stringify({
+        encoding: encoding.value,
+        display: display.value,
+        dirFilter: dirFilter.value,
+        collapse: collapse.value,
+        foldWindowSec: foldWindowSec.value,
+      }),
+    ),
+);
 const logEl = ref<HTMLElement>();
 
 interface Row {

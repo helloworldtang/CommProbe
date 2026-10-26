@@ -18,6 +18,14 @@ const KIND_LABELS: Record<TransportKind, string> = {
   serial: "串口",
 };
 
+/** 主按钮动词随类型走：客户端主动「连接」、服务端「监听」等入、UDP 绑定口「启动」、串口「打开」 */
+const ACTION_LABELS: Record<TransportKind, string> = {
+  "tcp-client": "连接",
+  "tcp-server": "监听",
+  udp: "启动",
+  serial: "打开",
+};
+
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
 
 const form = reactive({
@@ -52,9 +60,9 @@ function describe(): string {
     case "tcp-client":
       return `${form.host}:${form.port}`;
     case "tcp-server":
-      return `listen :${form.listenPort}`;
+      return `监听 :${form.listenPort}`;
     case "udp":
-      return `udp :${form.localPort}`;
+      return `:${form.localPort}`;
     case "serial":
       return `${form.serialPath} @${form.baudRate}`;
   }
@@ -201,7 +209,7 @@ watch(
       <span class="dim">ms 切帧</span>
     </label>
 
-    <button class="primary" @click="open">打开</button>
+    <button class="primary" @click="open">{{ ACTION_LABELS[form.kind] }}</button>
 
     <span class="spacer" />
     <span v-for="c in connections" :key="c.id" class="chip" :title="c.state">

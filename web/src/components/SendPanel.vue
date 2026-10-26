@@ -308,7 +308,7 @@ onUnmounted(() => {
           v-model="quickTarget"
           class="target"
           :disabled="!openConnections.length"
-          :title="openConnections.length ? '发送目标' : '上方打开一条连接后自动选中'"
+          :title="openConnections.length ? '发送目标' : '上方开启一条连接后自动选中'"
         >
           <option value="" disabled>
             {{ openConnections.length ? "目标连接…" : "无连接" }}
@@ -338,8 +338,14 @@ onUnmounted(() => {
           v-model="quickContent"
           class="quick-editor"
           :disabled="!quickTarget"
-          :placeholder="quickMode === 'hex' ? '01 03 00 00 00 02 C4 0B' : '要发送的文本'"
-          :title="quickTarget ? 'Enter 发送 · Shift+Enter 换行' : '上方打开一条连接后即可输入'"
+          :placeholder="
+            quickTarget
+              ? quickMode === 'hex'
+                ? '01 03 00 00 00 02 C4 0B'
+                : '要发送的文本'
+              : '↖ 上方选择类型并点「连接 / 监听」，开启一条连接后这里即可输入'
+          "
+          :title="quickTarget ? 'Enter 发送 · Shift+Enter 换行' : '上方开启一条连接后即可输入'"
           @input="onQuickInput"
           @keydown.enter="onQuickEnter"
         />
@@ -352,7 +358,10 @@ onUnmounted(() => {
           发送
         </button>
       </div>
-      <div v-if="quickAnalysis" class="feedback">
+      <div v-if="!quickTarget" class="feedback enable-hint">
+        <span class="dim">↖ 先在上方连接条点「连接 / 监听」开启一条连接——编辑框、发送、循环随之恢复可用</span>
+      </div>
+      <div v-else-if="quickAnalysis" class="feedback">
         <span
           v-for="(b, i) in quickAnalysis.bytes.slice(0, CHIP_LIMIT)"
           :key="i"
@@ -517,6 +526,12 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+}
+.enable-hint {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-s);
+  padding: 3px 8px;
+  font-size: 12px;
 }
 .chip {
   font-size: 12px;
