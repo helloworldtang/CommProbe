@@ -3,7 +3,7 @@
  * 纯类型与常量，无运行时依赖，web 侧直接 import 本文件。
  */
 
-export const PROTOCOL_VERSION = "0.1.3";
+export const PROTOCOL_VERSION = "0.1.4";
 
 /** 默认空闲切帧间隔（ms）：连续接收静默超过该时长即认为一帧结束 */
 export const DEFAULT_IDLE_MS = 300;

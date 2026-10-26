@@ -282,9 +282,8 @@ onUnmounted(() => {
 
 <style scoped>
 .send {
-  border-top: 1px solid var(--border);
   background: var(--panel);
-  max-height: 260px;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }

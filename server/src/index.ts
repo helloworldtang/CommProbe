@@ -33,6 +33,20 @@ function parseArgs(argv: string[]): CliOptions {
   return opts;
 }
 
+/** 带值参数按去值后的个数跳过 */
+const KNOWN_ARGS = new Set([
+  "--port",
+  "--no-open",
+  "--no-record",
+  "--dev",
+  "--version",
+  "-version",
+  "-V",
+  "--help",
+  "-help",
+  "-h",
+]);
+
 function printHelp(): void {
   console.log(`CommProbe v${PROTOCOL_VERSION} — 跨平台 TCP/UDP/串口联调工具
 
@@ -40,8 +54,8 @@ function printHelp(): void {
   --port <n>     监听端口（默认 ${DEFAULT_PORT}）
   --no-open      启动后不自动打开浏览器
   --no-record    关闭会话录制（默认开启，文件在 ~/.commprobe/sessions/）
-  --version, -V  输出版本号后退出
-  --help, -h     显示本帮助后退出
+  --version, -version, -V  输出版本号后退出
+  --help, -help, -h        显示本帮助后退出
 `);
 }
 
@@ -90,13 +104,17 @@ function openBrowser(url: string): void {
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
-  if (argv.includes("--version") || argv.includes("-V")) {
+  if (argv.includes("--version") || argv.includes("-version") || argv.includes("-V")) {
     console.log(PROTOCOL_VERSION);
     return;
   }
-  if (argv.includes("--help") || argv.includes("-h")) {
+  if (argv.includes("--help") || argv.includes("-help") || argv.includes("-h")) {
     printHelp();
     return;
+  }
+  const unknown = argv.filter((a) => a.startsWith("-") && !KNOWN_ARGS.has(a));
+  if (unknown.length > 0) {
+    console.warn(`[CommProbe] 未识别的参数：${unknown.join(" ")}（--help 查看用法，已忽略）`);
   }
   const opts = parseArgs(argv);
   const webDist = resolve(fileURLToPath(new URL("../../web/dist", import.meta.url)));
