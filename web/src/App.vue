@@ -29,8 +29,13 @@ const theme = ref<ThemeChoice>((localStorage.getItem(THEME_KEY) as ThemeChoice) 
 const darkMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
 function applyTheme(): void {
-  document.documentElement.dataset.theme =
-    theme.value === "auto" ? (darkMedia.matches ? "dark" : "light") : theme.value;
+  const resolved = theme.value === "auto" ? (darkMedia.matches ? "dark" : "light") : theme.value;
+  document.documentElement.dataset.theme = resolved;
+  // 浏览器标签页 favicon 同步跟随主题
+  document.querySelector<HTMLLinkElement>("link[rel='icon']")?.setAttribute(
+    "href",
+    resolved === "light" ? "/icon-light.svg" : "/icon.svg",
+  );
 }
 watch(theme, () => {
   localStorage.setItem(THEME_KEY, theme.value);
@@ -40,6 +45,13 @@ darkMedia.addEventListener("change", () => {
   if (theme.value === "auto") applyTheme();
 });
 applyTheme();
+
+/* ---- 操作台停靠：Chrome DevTools 式 底/左/右 三选，分段图标控件 ---- */
+
+type Dock = "bottom" | "left" | "right";
+const DOCK_KEY = "commprobe.layout.dock";
+const dock = ref<Dock>((localStorage.getItem(DOCK_KEY) as Dock) || "bottom");
+watch(dock, () => localStorage.setItem(DOCK_KEY, dock.value));
 
 /* ---- 校验计算器：低频工具，收进顶栏浮层，不占主界面 ---- */
 const checksumOpen = ref(false);
@@ -57,6 +69,34 @@ function loadNum(key: string, fallback: number): number {
 }
 
 const sendHeight = ref(loadNum(PANEL_KEY, defaultPanelHeight()));
+
+/* 侧边停靠时的宽度（独立于底部高度） */
+const SIDE_KEY = "commprobe.layout.sendWidth";
+const SIDE_DEFAULT = 480;
+const sendWidth = ref(loadNum(SIDE_KEY, SIDE_DEFAULT));
+
+const resetSide = () => {
+  sendWidth.value = SIDE_DEFAULT;
+  localStorage.setItem(SIDE_KEY, String(SIDE_DEFAULT));
+};
+const dragSideLeft = (e: MouseEvent) =>
+  startDrag(e, "x", {
+    min: 360,
+    max: Math.round(window.innerWidth * 0.6),
+    invert: false, // 操作台在左：向右拖 = 变宽
+    refValue: () => sendWidth.value,
+    apply: (v) => (sendWidth.value = v),
+    save: () => localStorage.setItem(SIDE_KEY, String(sendWidth.value)),
+  });
+const dragSideRight = (e: MouseEvent) =>
+  startDrag(e, "x", {
+    min: 360,
+    max: Math.round(window.innerWidth * 0.6),
+    invert: true, // 操作台在右：向左拖 = 变宽
+    refValue: () => sendWidth.value,
+    apply: (v) => (sendWidth.value = v),
+    save: () => localStorage.setItem(SIDE_KEY, String(sendWidth.value)),
+  });
 
 /* DevTools 式收起：收起时操作带缩成一条；拖拽条也收掉 */
 const sendCollapsed = ref(false);
@@ -139,6 +179,39 @@ onMounted(() => {
       <span class="badge" :class="{ ok: state.wsReady }">{{ wsBadge }}</span>
       <span v-if="state.lastError" class="error-banner">{{ state.lastError }}</span>
       <span class="spacer" />
+      <!-- DevTools 式停靠位置：分段图标控件，选中项亮主题色 -->
+      <div class="dock-seg" role="radiogroup" aria-label="操作台停靠位置">
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="dock === 'left'"
+          :class="{ on: dock === 'left' }"
+          title="操作台停靠左侧"
+          @click="dock = 'left'"
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" /><rect x="3" y="4" width="4" height="8" rx="1" fill="currentColor" /></svg>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="dock === 'bottom'"
+          :class="{ on: dock === 'bottom' }"
+          title="操作台停靠底部"
+          @click="dock = 'bottom'"
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" /><rect x="3" y="10" width="10" height="2.5" rx="1" fill="currentColor" /></svg>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="dock === 'right'"
+          :class="{ on: dock === 'right' }"
+          title="操作台停靠右侧"
+          @click="dock = 'right'"
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" /><rect x="9" y="4" width="4" height="8" rx="1" fill="currentColor" /></svg>
+        </button>
+      </div>
       <select v-model="theme" class="theme" title="界面主题">
         <option value="auto">跟随系统</option>
         <option value="dark">暗色</option>
@@ -155,25 +228,57 @@ onMounted(() => {
       </div>
     </header>
     <div class="body">
-      <main>
-        <LogPanel />
-        <div
-          v-if="!sendCollapsed"
-          class="divider-h"
-          title="拖动调高，双击复位"
-          @mousedown="dragSend"
-          @dblclick="resetSend"
-        />
-        <div
-          class="send-wrap"
-          :style="{ height: sendCollapsed ? '38px' : sendHeight + 'px' }"
-        >
-          <SendPanel
-            :collapsed="sendCollapsed"
-            @expand="sendCollapsed = false"
-            @collapse="sendCollapsed = true"
+      <main class="main" :class="`dock-${dock}`">
+        <!-- 停靠左侧：操作台在左，日志在右 -->
+        <template v-if="dock === 'left'">
+          <div class="send-wrap" :style="{ width: sendWidth + 'px' }">
+            <SendPanel :collapsed="false" :dock="dock" />
+          </div>
+          <div
+            class="divider-v"
+            title="拖动调宽，双击复位"
+            @mousedown="dragSideLeft"
+            @dblclick="resetSide"
           />
-        </div>
+          <LogPanel />
+        </template>
+
+        <!-- 停靠右侧：日志在左，操作台在右 -->
+        <template v-else-if="dock === 'right'">
+          <LogPanel />
+          <div
+            class="divider-v"
+            title="拖动调宽，双击复位"
+            @mousedown="dragSideRight"
+            @dblclick="resetSide"
+          />
+          <div class="send-wrap" :style="{ width: sendWidth + 'px' }">
+            <SendPanel :collapsed="false" :dock="dock" />
+          </div>
+        </template>
+
+        <!-- 停靠底部（默认）：日志在上，操作台在下，可收起 -->
+        <template v-else>
+          <LogPanel />
+          <div
+            v-if="!sendCollapsed"
+            class="divider-h"
+            title="拖动调高，双击复位"
+            @mousedown="dragSend"
+            @dblclick="resetSend"
+          />
+          <div
+            class="send-wrap"
+            :style="{ height: sendCollapsed ? '38px' : sendHeight + 'px' }"
+          >
+            <SendPanel
+              :collapsed="sendCollapsed"
+              :dock="dock"
+              @expand="sendCollapsed = false"
+              @collapse="sendCollapsed = true"
+            />
+          </div>
+        </template>
       </main>
     </div>
   </div>
@@ -241,12 +346,52 @@ onMounted(() => {
   display: flex;
   min-height: 0;
 }
+/* 停靠分段控件：Chrome DevTools 式图标组，选中项亮主题色 */
+.dock-seg {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 2px;
+}
+.dock-seg button {
+  border: none;
+  background: none;
+  padding: 2px 5px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+}
+.dock-seg button:hover {
+  border: none;
+  color: var(--text);
+  background: var(--panel-2);
+}
+.dock-seg .on {
+  color: var(--accent);
+}
 main {
   display: flex;
-  flex-direction: column;
   flex: 1;
   min-width: 0;
   min-height: 0;
+}
+.main.dock-bottom {
+  flex-direction: column;
+}
+.main.dock-left,
+.main.dock-right {
+  flex-direction: row;
+}
+.divider-v {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+}
+.divider-v:hover {
+  background: var(--accent);
 }
 .divider-h {
   height: 5px;

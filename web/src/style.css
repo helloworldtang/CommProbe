@@ -87,6 +87,17 @@ button {
 button:hover {
   border-color: var(--accent);
 }
+/* 依赖未满足（如无连接）时置灰不可点——依赖可见性即操作指引 */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:disabled:hover {
+  border-color: var(--border);
+}
 /* 主操作按钮：全局样式——子组件的 scoped CSS 作用不到兄弟面板的按钮 */
 .primary {
   background: var(--accent);

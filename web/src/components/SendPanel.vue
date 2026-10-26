@@ -2,13 +2,13 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
-
-/* DevTools 式收起：true 时整个操作带缩成一条，点击展开 */
-defineProps<{ collapsed: boolean }>();
-const emit = defineEmits<{ expand: []; collapse: [] }>();
 import type { TextEncoding } from "../../../server/src/shared/protocol";
 import ConnectionPanel from "./ConnectionPanel.vue";
 import { analyzeHex, fixCrcTail, sanitizeHexInput, type HexAnalysis } from "../hex-status";
+
+/* DevTools 式收起：true 时整个操作带缩成一条，点击展开 */
+defineProps<{ collapsed: boolean; dock: "bottom" | "left" | "right" }>();
+const emit = defineEmits<{ expand: []; collapse: [] }>();
 
 interface SendItem {
   id: string;
@@ -304,9 +304,14 @@ onUnmounted(() => {
     <!-- 快捷发送区：控件一行 + 内容一框，敲完即发 -->
     <div class="quick">
       <div class="quick-controls">
-        <select v-model="quickTarget" class="target">
+        <select
+          v-model="quickTarget"
+          class="target"
+          :disabled="!openConnections.length"
+          :title="openConnections.length ? '发送目标' : '上方打开一条连接后自动选中'"
+        >
           <option value="" disabled>
-            {{ openConnections.length ? "目标连接…" : "先在上方打开一条连接（自动选中）" }}
+            {{ openConnections.length ? "目标连接…" : "无连接" }}
           </option>
           <option v-for="c in openConnections" :key="c.id" :value="c.id">{{ c.label }}</option>
         </select>
@@ -322,7 +327,7 @@ onUnmounted(() => {
         <label class="loop-label" title="循环间隔（毫秒）">
           <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
         </label>
-        <button :class="{ looping: quickLooping }" @click="toggleQuickLoop">
+        <button :class="{ looping: quickLooping }" :disabled="!quickTarget" @click="toggleQuickLoop">
           {{ quickLooping ? "停循环" : "循环" }}
         </button>
         <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
@@ -332,12 +337,18 @@ onUnmounted(() => {
         <textarea
           v-model="quickContent"
           class="quick-editor"
+          :disabled="!quickTarget"
           :placeholder="quickMode === 'hex' ? '01 03 00 00 00 02 C4 0B' : '要发送的文本'"
-          title="Enter 发送 · Shift+Enter 换行"
+          :title="quickTarget ? 'Enter 发送 · Shift+Enter 换行' : '上方打开一条连接后即可输入'"
           @input="onQuickInput"
           @keydown.enter="onQuickEnter"
         />
-        <button class="primary send-btn" title="Enter 也可以发送" @click="quickSend">
+        <button
+          class="primary send-btn"
+          :disabled="!quickTarget"
+          title="Enter 也可以发送"
+          @click="quickSend"
+        >
           发送
         </button>
       </div>
@@ -371,7 +382,7 @@ onUnmounted(() => {
       <label>序列间隔</label>
       <input v-model.number="gapMs" class="gap" type="number" min="0" step="50" />
       <span class="dim">ms</span>
-      <button class="primary" @click="sendSequence">按顺序全部发送</button>
+      <button class="primary" :disabled="!quickTarget" @click="sendSequence">按顺序全部发送</button>
       <button @click="addItem">+ 新增</button>
     </div>
     <div class="items">
@@ -399,8 +410,12 @@ onUnmounted(() => {
           placeholder="循环ms"
           title="循环间隔（毫秒），0 表示不用循环"
         />
-        <button class="primary" @click="sendItem(item)">发送</button>
-        <button :class="{ looping: isLooping(item.id) }" @click="toggleItemLoop(item)">
+        <button class="primary" :disabled="!quickTarget" @click="sendItem(item)">发送</button>
+        <button
+          :class="{ looping: isLooping(item.id) }"
+          :disabled="!quickTarget"
+          @click="toggleItemLoop(item)"
+        >
           {{ isLooping(item.id) ? "停" : "循环" }}
         </button>
         <button @click="removeItem(i)">✕</button>
@@ -408,7 +423,12 @@ onUnmounted(() => {
     </div>
     </template>
     <!-- 展开态尾部：收起入口（DevTools 控制台式） -->
-    <button v-if="!collapsed" class="collapse-btn" title="收起操作台" @click="emit('collapse')">⌄</button>
+    <button
+      v-if="!collapsed && dock === 'bottom'"
+      class="collapse-btn"
+      title="收起操作台"
+      @click="emit('collapse')"
+    >⌄</button>
   </section>
 </template>
 
