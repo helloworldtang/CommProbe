@@ -7,7 +7,27 @@ import { decodeText, normalizeHex, parseHex } from "../../../server/src/shared/h
 
 const encoding = ref<"utf-8" | "gbk">("utf-8");
 const display = ref<"both" | "hex" | "text">("both");
-const autoScroll = ref(true);
+
+/* ---- 聊天室式滚动：贴底时新帧自动跟滚；用户上翻则停住不打扰，并数着新帧 ---- */
+/** 是否贴在底部（距底 < 40px 视为贴底） */
+const atBottom = ref(true);
+/** 上翻期间新到、还没看过的帧数 */
+const unread = ref(0);
+
+function onScroll(): void {
+  const el = logEl.value;
+  if (!el) return;
+  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  if (atBottom.value) unread.value = 0;
+}
+
+function jumpToBottom(): void {
+  const el = logEl.value;
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+  atBottom.value = true;
+  unread.value = 0;
+}
 /** 帧过滤：hex 片段（如 "08 00"）或文本关键字，不匹配的帧隐藏 */
 const filterText = ref("");
 /** 方向筛选 */
@@ -107,11 +127,15 @@ const totalShown = computed(() =>
 
 watch(
   () => state.logs.length,
-  () => {
-    if (autoScroll.value) {
+  (n, o) => {
+    const delta = n - (o ?? n);
+    if (delta <= 0) return;
+    if (atBottom.value) {
       void nextTick(() => {
         if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight;
       });
+    } else {
+      unread.value += delta;
     }
   },
 );
@@ -147,11 +171,10 @@ function clear(): void {
         <option value="utf-8">UTF-8</option>
         <option value="gbk">GBK</option>
       </select>
-      <label><input v-model="autoScroll" type="checkbox" /> 自动滚动</label>
       <span class="dim">{{ totalShown }}</span>
       <button @click="clear">清空</button>
     </div>
-    <div ref="logEl" class="entries">
+    <div ref="logEl" class="entries" @scroll.passive="onScroll">
       <div v-if="rows.length === 0" class="dim placeholder">
         暂无数据：打开连接后收发帧将显示在这里（按空闲间隔自动分组）
       </div>
@@ -175,6 +198,9 @@ function clear(): void {
         <div v-if="display !== 'hex'" class="text">{{ row.text }}</div>
       </div>
     </div>
+    <button v-if="unread > 0" class="unread-pill" title="回到最新" @click="jumpToBottom">
+      ↓ {{ unread }} 条新帧
+    </button>
   </section>
 </template>
 
@@ -184,6 +210,20 @@ function clear(): void {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+}
+.unread-pill {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  z-index: 10;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-pop);
 }
 .toolbar {
   display: flex;

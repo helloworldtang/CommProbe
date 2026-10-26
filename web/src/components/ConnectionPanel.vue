@@ -282,24 +282,14 @@ watch(
 .params-btn {
   font-size: 12px;
 }
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 14;
-}
+/* 弹层皮肤在全局 style.css（.pop/.overlay），这里只补定位与内边距 */
 .pop {
-  position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 15;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 10px 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
 }
 .pop label {

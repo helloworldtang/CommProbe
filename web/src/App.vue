@@ -21,13 +21,34 @@ watch(
   },
 );
 
+/* ---- 主题：跟随系统（默认）/ 亮 / 暗——解析结果落到 <html data-theme>，CSS 只认结果 ---- */
+
+type ThemeChoice = "auto" | "light" | "dark";
+const THEME_KEY = "commprobe.theme";
+const theme = ref<ThemeChoice>((localStorage.getItem(THEME_KEY) as ThemeChoice) || "auto");
+const darkMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+function applyTheme(): void {
+  document.documentElement.dataset.theme =
+    theme.value === "auto" ? (darkMedia.matches ? "dark" : "light") : theme.value;
+}
+watch(theme, () => {
+  localStorage.setItem(THEME_KEY, theme.value);
+  applyTheme();
+});
+darkMedia.addEventListener("change", () => {
+  if (theme.value === "auto") applyTheme();
+});
+applyTheme();
+
 /* ---- 校验计算器：低频工具，收进顶栏浮层，不占主界面 ---- */
 const checksumOpen = ref(false);
 
 /* ---- 可拖拽面板（业界惯例：拖动调大小 / 双击复位 / 尺寸记忆，同 VS Code） ---- */
 
-const PANEL_KEY = "commprobe.layout.sendHeight";
-const PANEL_DEFAULT = 320;
+const PANEL_KEY = "commprobe.layout.sendHeight2";
+/** 操作带默认占视口 1/3——配置+组帧是主战场，不该被日志挤成一条 */
+const defaultPanelHeight = () => Math.max(Math.round(window.innerHeight / 3), 240);
 
 function loadNum(key: string, fallback: number): number {
   const raw = localStorage.getItem(key);
@@ -35,7 +56,7 @@ function loadNum(key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-const sendHeight = ref(loadNum(PANEL_KEY, PANEL_DEFAULT));
+const sendHeight = ref(loadNum(PANEL_KEY, defaultPanelHeight()));
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max);
@@ -84,8 +105,8 @@ const dragSend = (e: MouseEvent) =>
   });
 
 const resetSend = () => {
-  sendHeight.value = PANEL_DEFAULT;
-  localStorage.setItem(PANEL_KEY, String(PANEL_DEFAULT));
+  sendHeight.value = defaultPanelHeight();
+  localStorage.setItem(PANEL_KEY, String(sendHeight.value));
 };
 
 onMounted(() => {
@@ -104,6 +125,11 @@ onMounted(() => {
       <span class="badge" :class="{ ok: state.wsReady }">{{ wsBadge }}</span>
       <span v-if="state.lastError" class="error-banner">{{ state.lastError }}</span>
       <span class="spacer" />
+      <select v-model="theme" class="theme" title="界面主题">
+        <option value="auto">跟随系统</option>
+        <option value="dark">暗色</option>
+        <option value="light">亮色</option>
+      </select>
       <div class="pop-wrap">
         <button :class="{ on: checksumOpen }" @click="checksumOpen = !checksumOpen">
           校验计算器
@@ -163,13 +189,16 @@ onMounted(() => {
 }
 .error-banner {
   color: var(--error);
-  background: color-mix(in srgb, var(--error) 12%, transparent);
+  background: var(--error-soft);
   border: 1px solid var(--error);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   padding: 2px 8px;
 }
 .spacer {
   flex: 1;
+}
+.theme {
+  flex-shrink: 0;
 }
 .pop-wrap {
   position: relative;
@@ -178,22 +207,12 @@ onMounted(() => {
   border-color: var(--accent);
   color: var(--accent);
 }
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 14;
-}
+/* 弹层皮肤在全局 style.css（.pop/.overlay），这里只补定位与内边距 */
 .pop {
-  position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 15;
   width: 360px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 8px 12px 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 .body {
   flex: 1;

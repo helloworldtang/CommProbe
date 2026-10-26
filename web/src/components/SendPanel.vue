@@ -310,7 +310,6 @@ onUnmounted(() => {
           <option value="gbk">GBK</option>
         </select>
         <span class="spacer" />
-        <button class="primary send-btn" @click="quickSend">发送</button>
         <label class="loop-label" title="循环间隔（毫秒）">
           <input v-model.number="quickLoopMs" class="loop-ms" type="number" min="50" step="50" />
         </label>
@@ -319,15 +318,20 @@ onUnmounted(() => {
         </button>
         <button title="把当前内容存为常用条目" @click="saveQuickAsItem">存</button>
       </div>
-      <textarea
-        v-model="quickContent"
-        class="quick-editor"
-        rows="3"
-        :placeholder="quickMode === 'hex' ? '01 03 00 00 00 02 C4 0B' : '要发送的文本'"
-        title="Enter 发送 · Shift+Enter 换行"
-        @input="onQuickInput"
-        @keydown.enter="onQuickEnter"
-      />
+      <!-- 搜索引擎式：输入框与发送按钮同排，按钮正方形大且好点 -->
+      <div class="quick-row">
+        <textarea
+          v-model="quickContent"
+          class="quick-editor"
+          :placeholder="quickMode === 'hex' ? '01 03 00 00 00 02 C4 0B' : '要发送的文本'"
+          title="Enter 发送 · Shift+Enter 换行"
+          @input="onQuickInput"
+          @keydown.enter="onQuickEnter"
+        />
+        <button class="primary send-btn" title="Enter 也可以发送" @click="quickSend">
+          发送
+        </button>
+      </div>
       <div v-if="quickAnalysis" class="feedback">
         <span
           v-for="(b, i) in quickAnalysis.bytes.slice(0, CHIP_LIMIT)"
@@ -423,23 +427,28 @@ onUnmounted(() => {
 .quick .mode {
   flex-shrink: 0;
 }
-/* 主操作按钮：高频路径，明显大于同排控件才好点 */
-.quick-controls .send-btn {
-  padding: 8px 26px;
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: 6px;
+/* 搜索引擎式输入排：输入框占满剩余宽，发送按钮正方形贴右 */
+.quick-row {
+  display: flex;
+  gap: 6px;
 }
 .quick-editor {
-  width: 100%;
-  min-height: 72px;
-  resize: vertical;
+  flex: 1;
+  height: 88px;
+  resize: none;
   font-size: 15px;
   line-height: 1.6;
   padding: 6px 8px;
 }
 .quick-editor:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.send-btn {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  font-size: 16px;
+  border-radius: var(--radius-m);
 }
 .feedback {
   display: flex;
