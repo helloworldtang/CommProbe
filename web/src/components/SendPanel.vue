@@ -2,6 +2,10 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { sendMsg, state } from "../store";
+
+/* DevTools 式收起：true 时整个操作带缩成一条，点击展开 */
+defineProps<{ collapsed: boolean }>();
+const emit = defineEmits<{ expand: []; collapse: [] }>();
 import type { TextEncoding } from "../../../server/src/shared/protocol";
 import ConnectionPanel from "./ConnectionPanel.vue";
 import { analyzeHex, fixCrcTail, sanitizeHexInput, type HexAnalysis } from "../hex-status";
@@ -290,6 +294,11 @@ onUnmounted(() => {
 
 <template>
   <section class="send">
+    <!-- 收起态：一条可点击的横条（DevTools 控制台收起式） -->
+    <div v-if="collapsed" class="collapsed-bar" title="展开操作台" @click="emit('expand')">
+      ⌃ 操作台（点击展开）
+    </div>
+    <template v-else>
     <!-- 操作带：①连接（正上方）→ ②组帧发送 → ③常用，从左到右=依赖顺序 -->
     <ConnectionPanel />
     <!-- 快捷发送区：控件一行 + 内容一框，敲完即发 -->
@@ -397,6 +406,9 @@ onUnmounted(() => {
         <button @click="removeItem(i)">✕</button>
       </div>
     </div>
+    </template>
+    <!-- 展开态尾部：收起入口（DevTools 控制台式） -->
+    <button v-if="!collapsed" class="collapse-btn" title="收起操作台" @click="emit('collapse')">⌄</button>
   </section>
 </template>
 
@@ -406,6 +418,35 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.collapsed-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+}
+.collapsed-bar:hover {
+  color: var(--accent);
+  background: var(--panel-2);
+}
+.collapse-btn {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  z-index: 5;
+  padding: 1px 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+}
+.collapse-btn:hover {
+  color: var(--accent);
 }
 .quick {
   display: flex;
@@ -443,8 +484,9 @@ onUnmounted(() => {
 .quick-editor:focus {
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
+/* 搜索引擎式发送按钮：宽矩形（用户拍板 140×88），比正方形更像「搜索」按钮 */
 .send-btn {
-  width: 88px;
+  width: 140px;
   height: 88px;
   flex-shrink: 0;
   font-size: 16px;

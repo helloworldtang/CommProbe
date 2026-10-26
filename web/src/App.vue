@@ -58,6 +58,9 @@ function loadNum(key: string, fallback: number): number {
 
 const sendHeight = ref(loadNum(PANEL_KEY, defaultPanelHeight()));
 
+/* DevTools 式收起：收起时操作带缩成一条；拖拽条也收掉 */
+const sendCollapsed = ref(false);
+
 function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max);
 }
@@ -120,7 +123,18 @@ onMounted(() => {
 <template>
   <div class="app">
     <header class="topbar">
-      <img class="logo" src="/icon.svg" alt="CommProbe" />
+      <!-- 图标内联：三色走 design token，随主题切换（静态 icon.svg 仅作 favicon） -->
+      <svg class="logo" viewBox="0 0 64 64" aria-label="CommProbe">
+        <circle cx="32" cy="32" r="30" fill="var(--panel-2)" stroke="var(--border)" />
+        <path
+          d="M10 38 C 18 38, 18 22, 28 22 S 38 42, 48 42"
+          stroke="var(--text-dim)"
+          stroke-width="5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <circle cx="48" cy="42" r="4" fill="var(--accent)" />
+      </svg>
       <span class="brand">CommProbe</span>
       <span class="badge" :class="{ ok: state.wsReady }">{{ wsBadge }}</span>
       <span v-if="state.lastError" class="error-banner">{{ state.lastError }}</span>
@@ -144,13 +158,21 @@ onMounted(() => {
       <main>
         <LogPanel />
         <div
+          v-if="!sendCollapsed"
           class="divider-h"
           title="拖动调高，双击复位"
           @mousedown="dragSend"
           @dblclick="resetSend"
         />
-        <div class="send-wrap" :style="{ height: sendHeight + 'px' }">
-          <SendPanel />
+        <div
+          class="send-wrap"
+          :style="{ height: sendCollapsed ? '38px' : sendHeight + 'px' }"
+        >
+          <SendPanel
+            :collapsed="sendCollapsed"
+            @expand="sendCollapsed = false"
+            @collapse="sendCollapsed = true"
+          />
         </div>
       </main>
     </div>
